@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
+// import html2canvas from 'html2canvas';
 
 const MESES_ES = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
 const formatearNumero = (num: number) =>
-  num.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+  '$' + num.toLocaleString('es-ES', { maximumFractionDigits: 2 });
 
 interface FilaReporte {
   fecha: string; // solo día
@@ -16,172 +17,258 @@ interface FilaReporte {
 }
 
 interface MesReporte {
-  mes: string; // 'Ene', 'Feb', etc.
+  mes: string; // 'Enero', 'Febrero', etc.
+  anio: number;
   filas: FilaReporte[];
 }
 
-function generarMeses(ingresoBase: number, meses: number): MesReporte[] {
-  const resultados: MesReporte[] = [];
-  const now = new Date();
-  let fecha = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  for (let m = 0; m < meses; m++) {
-    const variacion = 1 + (Math.random() * 0.1 - 0.05);
-    const ingresos_total = Math.round(ingresoBase * variacion);
-    const porcentaje_gastos = 0.77 + Math.random() * 0.05;
-    const gastos_total = Math.round(ingresos_total * porcentaje_gastos);
-    const ultimoDia = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
-    const diasEnMes = ultimoDia.getDate();
-    const diasTrabajados = Math.floor(16 + Math.random() * 9);
-    const diasSeleccionados = Array.from({ length: diasEnMes }, (_, i) => i + 1)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, diasTrabajados)
-      .sort((a, b) => a - b);
-    let ingresosRest = ingresos_total;
-    let gastosRest = gastos_total;
-    const ingresosDiarios: number[] = [];
-    const gastosDiarios: number[] = [];
-    for (let i = 0; i < diasTrabajados; i++) {
-      let ingreso, gasto;
-      if (i === diasTrabajados - 1) {
-        ingreso = ingresosRest;
-        gasto = gastosRest;
-      } else {
-        ingreso = Math.round(
-          Math.min(
-            (ingresos_total / diasTrabajados) * (0.7 + Math.random() * 0.6),
-            ingresosRest
-          )
-        );
-        gasto = Math.round(
-          Math.min(
-            (gastos_total / diasTrabajados) * (0.7 + Math.random() * 0.6),
-            gastosRest
-          )
-        );
+function generarMes(ingresoBase: number, mes: number, anio: number, porcentajeGanancia: number): MesReporte {
+  // mes: 0 = Enero, 11 = Diciembre
+  const ingresos_total = ingresoBase;
+  // El usuario ingresa el % de ganancia, por lo tanto gastos = ingresos - ganancia
+  // ganancia = ingresos * (porcentajeGanancia / 100)
+  // gastos = ingresos - ganancia
+  const ganancia_total = Math.round(ingresos_total * (porcentajeGanancia / 100));
+  const gastos_total = ingresos_total - ganancia_total;
+  const ultimoDia = new Date(anio, mes + 1, 0);
+  const diasEnMes = ultimoDia.getDate();
+  const diasTrabajados = Math.floor(16 + Math.random() * 9);
+  const diasSeleccionados = Array.from({ length: diasEnMes }, (_, i) => i + 1)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, diasTrabajados)
+    .sort((a, b) => a - b);
+  let ingresosRest = ingresos_total;
+  let gastosRest = gastos_total;
+  let gananciaRest = ganancia_total;
+  const ingresosDiarios: number[] = [];
+  const gastosDiarios: number[] = [];
+  const gananciasDiarias: number[] = [];
+  for (let i = 0; i < diasTrabajados; i++) {
+    let ingreso, gasto, ganancia;
+    if (i === diasTrabajados - 1) {
+      ingreso = ingresosRest;
+      gasto = gastosRest;
+      ganancia = gananciaRest;
+    } else {
+      ingreso = Math.round(
+        Math.min(
+          (ingresos_total / diasTrabajados) * (0.7 + Math.random() * 0.6),
+          ingresosRest
+        )
+      );
+      ganancia = Math.round(
+        Math.min(
+          (ganancia_total / diasTrabajados) * (0.7 + Math.random() * 0.6),
+          gananciaRest
+        )
+      );
+      gasto = ingreso - ganancia;
+      // Aseguramos que no sea negativo
+      if (gasto < 0) {
+        gasto = 0;
+        ganancia = ingreso;
       }
-      ingresosDiarios.push(ingreso);
-      gastosDiarios.push(gasto);
-      ingresosRest -= ingreso;
-      gastosRest -= gasto;
     }
-    const filas: FilaReporte[] = diasSeleccionados.map((dia, i) => ({
-      fecha: `${dia}`,
-      ingresos: ingresosDiarios[i],
-      gastos: gastosDiarios[i],
-      ganancia: ingresosDiarios[i] - gastosDiarios[i],
-    }));
-    filas.push({
-      fecha: 'TOTAL',
-      ingresos: ingresosDiarios.reduce((a, b) => a + b, 0),
-      gastos: gastosDiarios.reduce((a, b) => a + b, 0),
-      ganancia:
-        ingresosDiarios.reduce((a, b) => a + b, 0) -
-        gastosDiarios.reduce((a, b) => a + b, 0),
-    });
-    resultados.push({
-      mes: MESES_ES[fecha.getMonth()],
-      filas,
-    });
-    fecha = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1);
+    ingresosDiarios.push(ingreso);
+    gastosDiarios.push(gasto);
+    gananciasDiarias.push(ganancia);
+    ingresosRest -= ingreso;
+    gastosRest -= gasto;
+    gananciaRest -= ganancia;
   }
-  return resultados;
+  const filas: FilaReporte[] = diasSeleccionados.map((dia, i) => ({
+    fecha: `${dia}`,
+    ingresos: ingresosDiarios[i],
+    gastos: gastosDiarios[i],
+    ganancia: gananciasDiarias[i],
+  }));
+  filas.push({
+    fecha: 'TOTAL',
+    ingresos: ingresosDiarios.reduce((a, b) => a + b, 0),
+    gastos: gastosDiarios.reduce((a, b) => a + b, 0),
+    ganancia: gananciasDiarias.reduce((a, b) => a + b, 0),
+  });
+  return {
+    mes: MESES_ES[mes],
+    anio,
+    filas,
+  };
 }
 
-function exportarCSV(meses: MesReporte[]) {
+function exportarCSV(mes: MesReporte) {
   let csv = '';
-  meses.forEach((mes) => {
-    csv += `Mes: ${mes.mes}\n`;
-    csv += 'Día,Ingresos,Gastos,Ganancia\n';
-    mes.filas.forEach((fila) => {
-      csv += `${fila.fecha},${fila.ingresos},${fila.gastos},${fila.ganancia}\n`;
-    });
-    csv += '\n';
+  csv += `Mes: ${mes.mes} ${mes.anio}\n`;
+  csv += 'Día,Ingresos,Gastos,Ganancia\n';
+  mes.filas.forEach((fila) => {
+    csv += `${fila.fecha},${fila.ingresos},${fila.gastos},${fila.ganancia}\n`;
   });
+  csv += '\n';
   return csv;
 }
 
+function exportarTXT(mes: MesReporte) {
+  let txt = `Mes: ${mes.mes} ${mes.anio}\n`;
+  txt += 'Día\tIngresos\tGastos\tGanancia\n';
+  mes.filas.forEach((fila) => {
+    txt += `${fila.fecha}\t${fila.ingresos}\t${fila.gastos}\t${fila.ganancia}\n`;
+  });
+  return txt;
+}
+
+function exportarHTML(mes: MesReporte) {
+  let html = `<h2>Mes: ${mes.mes} ${mes.anio}</h2><table border='1' cellpadding='4' style='border-collapse:collapse;'>`;
+  html += '<tr><th>Día</th><th>Ingresos</th><th>Gastos</th><th>Ganancia</th></tr>';
+  mes.filas.forEach((fila) => {
+    html += `<tr><td>${fila.fecha}</td><td>${fila.ingresos}</td><td>${fila.gastos}</td><td>${fila.ganancia}</td></tr>`;
+  });
+  html += '</table>';
+  return html;
+}
+
 export const ReporteFinanciero = () => {
-  const [ingreso, setIngreso] = useState('');
-  const [meses, setMeses] = useState('12');
-  const [reporte, setReporte] = useState<MesReporte[]>([]);
+  const [ingreso, setIngreso] = useState('15000');
+  const [mes, setMes] = useState(new Date().getMonth().toString());
+  const [anio, setAnio] = useState(new Date().getFullYear().toString());
+  const [porcentajeGanancia, setPorcentajeGanancia] = useState('20');
+  const [reporte, setReporte] = useState<MesReporte | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const handler = () => {
-      if (reporte.length > 0) handleDescargar();
+    // Expone si hay reporte generado para el header
+    (window as any).reporteFinancieroGenerado = !!reporte;
+  }, [reporte]);
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ tipo: string }>) => {
+      if (!reporte) return;
+      const tipo = e.detail?.tipo || 'csv';
+      if (tipo === 'csv') {
+        const csv = exportarCSV(reporte);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_financiero_${reporte.mes}_${reporte.anio}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (tipo === 'txt') {
+        const txt = exportarTXT(reporte);
+        const blob = new Blob([txt], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_financiero_${reporte.mes}_${reporte.anio}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (tipo === 'html') {
+        const html = exportarHTML(reporte);
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_financiero_${reporte.mes}_${reporte.anio}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     };
-    window.addEventListener('descargar-reporte-financiero', handler);
-    return () => window.removeEventListener('descargar-reporte-financiero', handler);
+    window.addEventListener('descargar-reporte-financiero', handler as EventListener);
+    return () => window.removeEventListener('descargar-reporte-financiero', handler as EventListener);
   }, [reporte]);
 
   const handleGenerar = () => {
     setError('');
     const ingresoNum = parseInt(ingreso);
-    const mesesNum = parseInt(meses);
+    const mesNum = parseInt(mes);
+    const anioNum = parseInt(anio);
+    const porcentajeNum = parseFloat(porcentajeGanancia);
     if (isNaN(ingresoNum) || ingresoNum <= 0) {
       setError('El ingreso debe ser un número positivo.');
       return;
     }
-    if (isNaN(mesesNum) || mesesNum <= 0 || mesesNum > 36) {
-      setError('La cantidad de meses debe ser entre 1 y 36.');
+    if (isNaN(mesNum) || mesNum < 0 || mesNum > 11) {
+      setError('Selecciona un mes válido.');
       return;
     }
-    setReporte(generarMeses(ingresoNum, mesesNum));
+    if (isNaN(anioNum) || anioNum < 2000 || anioNum > 2100) {
+      setError('Selecciona un año válido.');
+      return;
+    }
+    if (isNaN(porcentajeNum) || porcentajeNum < 0 || porcentajeNum > 100) {
+      setError('El porcentaje de ganancia debe estar entre 0 y 100.');
+      return;
+    }
+    setReporte(generarMes(ingresoNum, mesNum, anioNum, porcentajeNum));
   };
 
-  const handleDescargar = () => {
-    const csv = exportarCSV(reporte);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'reporte_financiero.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  // Años disponibles para seleccionar
+  const aniosDisponibles = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2 flex flex-col items-center">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 sm:p-10 mb-8 border border-blue-100">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-8 tracking-tight">Reporte Financiero Mensual</h1>
-        <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-6">
-          <div className="flex flex-col w-full md:w-1/2">
-            <label className="font-semibold text-blue-800 mb-1">Ingresos del mes base (€)</label>
+      <div className="w-full max-w-3xl bg-white/90 rounded-3xl shadow-2xl p-4 sm:p-8 mb-8 border border-blue-200 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none select-none opacity-10" style={{background: 'radial-gradient(circle at 80% 20%, #60a5fa 0%, transparent 70%)'}}></div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-center text-blue-900 mb-6 tracking-tight drop-shadow">Reporte Financiero Mensual</h1>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 items-end z-10 relative">
+          <div className="flex flex-col">
+            <label className="font-semibold text-blue-800 mb-1 text-xs sm:text-sm">Mes</label>
+            <select
+              className="p-2 rounded-lg border border-blue-200 focus:border-blue-500 text-base text-center bg-blue-50"
+              value={mes}
+              onChange={e => setMes(e.target.value)}
+            >
+              {MESES_ES.map((m, idx) => (
+                <option key={m} value={idx}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="font-semibold text-blue-800 mb-1 text-xs sm:text-sm">Año</label>
+            <select
+              className="p-2 rounded-lg border border-blue-200 focus:border-blue-500 text-base text-center bg-blue-50"
+              value={anio}
+              onChange={e => setAnio(e.target.value)}
+            >
+              {aniosDisponibles.map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="font-semibold text-blue-800 mb-1 text-xs sm:text-sm">Ingresos ($)</label>
             <input
               type="number"
-              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center bg-blue-50 placeholder-blue-300"
+              className="p-2 rounded-lg border border-blue-200 focus:border-blue-500 text-base text-center bg-blue-50 placeholder-blue-300"
               value={ingreso}
               onChange={e => setIngreso(e.target.value)}
-              placeholder="Ej: 2500"
+              placeholder="Ej: 15000"
               min={0}
             />
           </div>
-          <div className="flex flex-col w-full md:w-1/2">
-            <label className="font-semibold text-blue-800 mb-1">Meses a simular</label>
+          <div className="flex flex-col">
+            <label className="font-semibold text-blue-800 mb-1 text-xs sm:text-sm">% Ganancia</label>
             <input
               type="number"
-              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center bg-blue-50 placeholder-blue-300"
-              value={meses}
-              onChange={e => setMeses(e.target.value)}
-              placeholder="Ej: 12"
-              min={1}
-              max={36}
+              className="p-2 rounded-lg border border-blue-200 focus:border-blue-500 text-base text-center bg-blue-50 placeholder-blue-300"
+              value={porcentajeGanancia}
+              onChange={e => setPorcentajeGanancia(e.target.value)}
+              placeholder="Ej: 20"
+              min={0}
+              max={100}
             />
           </div>
         </div>
         <button
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-2xl font-bold py-4 rounded-xl transition-colors mb-4 shadow-lg"
+          className="w-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 hover:from-blue-800 hover:to-blue-500 text-white text-xl font-extrabold py-3 rounded-2xl transition-colors mb-2 shadow-xl tracking-wide z-10 relative"
           onClick={handleGenerar}
         >
           Generar Reporte
         </button>
-        {error && <div className="text-red-600 text-center font-bold mb-4">{error}</div>}
+        {error && <div className="text-red-600 text-center font-bold mb-2 text-sm z-10 relative">{error}</div>}
       </div>
       <div className="w-full max-w-4xl">
-        {reporte.map((mes) => (
-          <div key={mes.mes} className="mb-10 bg-white rounded-2xl shadow-lg p-3 sm:p-6 border border-blue-100">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-4 text-center tracking-tight">Mes: {mes.mes}</h2>
+        {reporte && (
+          <div className="mb-10 bg-white rounded-2xl shadow-lg p-3 sm:p-6 border border-blue-100">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-4 text-center tracking-tight">{reporte.mes} {reporte.anio}</h2>
             <div className="w-full">
               <table className="w-full text-sm sm:text-base md:text-lg text-center border-separate border-spacing-y-1">
                 <thead>
@@ -193,7 +280,7 @@ export const ReporteFinanciero = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {mes.filas.map((fila, i) => (
+                  {reporte.filas.map((fila, i) => (
                     <tr
                       key={i}
                       className={
@@ -213,7 +300,7 @@ export const ReporteFinanciero = () => {
             </div>
             <div className="text-xs text-gray-500 mt-2 text-center">Los montos han sido distribuidos de manera semi-aleatoria entre los días trabajados.</div>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
