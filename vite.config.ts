@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => {
           'screenshot-mobile.png'
         ],
         manifest: {
-          name: 'La Cadeca',
-          short_name: 'La Cadeca',
-          description: 'Calculadora de conversiones de moneda, compra venta de divisas en Cuba',
+          name: 'Reporte Financiero',
+          short_name: 'Reporte Financiero',
+          description: 'Generador de reportes financieros mensuales y simulador de ingresos y ganancias',
           theme_color: '#FFC107',
           background_color: '#ffffff',
           display: 'standalone',
@@ -83,7 +83,7 @@ export default defineConfig(({ mode }) => {
               icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
             }
           ],
-          categories: ['travel', 'transportation'],
+          categories: ['finance', 'productivity'],
           lang: 'es',
           dir: 'ltr'
         },
