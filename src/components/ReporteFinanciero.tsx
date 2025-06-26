@@ -9,7 +9,7 @@ const formatearNumero = (num: number) =>
   num.toLocaleString('es-ES', { maximumFractionDigits: 2 });
 
 interface FilaReporte {
-  fecha: string; // formato: 'DD-MMM'
+  fecha: string; // solo día
   ingresos: number;
   gastos: number;
   ganancia: number;
@@ -66,7 +66,7 @@ function generarMeses(ingresoBase: number, meses: number): MesReporte[] {
       gastosRest -= gasto;
     }
     const filas: FilaReporte[] = diasSeleccionados.map((dia, i) => ({
-      fecha: `${dia.toString().padStart(2, '0')}-${MESES_ES[fecha.getMonth()]}`,
+      fecha: `${dia}`,
       ingresos: ingresosDiarios[i],
       gastos: gastosDiarios[i],
       ganancia: ingresosDiarios[i] - gastosDiarios[i],
@@ -92,7 +92,7 @@ function exportarCSV(meses: MesReporte[]) {
   let csv = '';
   meses.forEach((mes) => {
     csv += `Mes: ${mes.mes}\n`;
-    csv += 'Fecha,Ingresos,Gastos,Ganancia\n';
+    csv += 'Día,Ingresos,Gastos,Ganancia\n';
     mes.filas.forEach((fila) => {
       csv += `${fila.fecha},${fila.ingresos},${fila.gastos},${fila.ganancia}\n`;
     });
@@ -142,15 +142,15 @@ export const ReporteFinanciero = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 py-8 px-2 flex flex-col items-center">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-8 mb-8">
-        <h1 className="text-4xl font-bold text-center text-blue-900 mb-8">Reporte Financiero Mensual</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2 flex flex-col items-center">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 sm:p-10 mb-8 border border-blue-100">
+        <h1 className="text-3xl sm:text-4xl font-bold text-center text-blue-900 mb-8 tracking-tight">Reporte Financiero Mensual</h1>
         <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-6">
           <div className="flex flex-col w-full md:w-1/2">
             <label className="font-semibold text-blue-800 mb-1">Ingresos del mes base (€)</label>
             <input
               type="number"
-              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center"
+              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center bg-blue-50 placeholder-blue-300"
               value={ingreso}
               onChange={e => setIngreso(e.target.value)}
               placeholder="Ej: 2500"
@@ -161,7 +161,7 @@ export const ReporteFinanciero = () => {
             <label className="font-semibold text-blue-800 mb-1">Meses a simular</label>
             <input
               type="number"
-              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center"
+              className="p-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 text-2xl text-center bg-blue-50 placeholder-blue-300"
               value={meses}
               onChange={e => setMeses(e.target.value)}
               placeholder="Ej: 12"
@@ -171,34 +171,41 @@ export const ReporteFinanciero = () => {
           </div>
         </div>
         <button
-          className="w-full bg-blue-700 hover:bg-blue-800 text-white text-2xl font-bold py-4 rounded-xl transition-colors mb-4"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-2xl font-bold py-4 rounded-xl transition-colors mb-4 shadow-lg"
           onClick={handleGenerar}
         >
           Generar Reporte
         </button>
         {error && <div className="text-red-600 text-center font-bold mb-4">{error}</div>}
       </div>
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-4xl">
         {reporte.map((mes) => (
-          <div key={mes.mes} className="mb-12 bg-white rounded-2xl shadow-xl p-6 overflow-x-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-blue-800 mb-4 text-center">Mes: {mes.mes}</h2>
-            <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[400px] text-base md:text-lg text-center border-collapse">
+          <div key={mes.mes} className="mb-10 bg-white rounded-2xl shadow-lg p-3 sm:p-6 border border-blue-100">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-4 text-center tracking-tight">Mes: {mes.mes}</h2>
+            <div className="w-full">
+              <table className="w-full text-sm sm:text-base md:text-lg text-center border-separate border-spacing-y-1">
                 <thead>
-                  <tr className="bg-blue-100">
-                    <th className="p-2 md:p-3 border-b-2 border-blue-200">Fecha</th>
-                    <th className="p-2 md:p-3 border-b-2 border-blue-200">Ingresos</th>
-                    <th className="p-2 md:p-3 border-b-2 border-blue-200">Gastos</th>
-                    <th className="p-2 md:p-3 border-b-2 border-blue-200">Ganancia</th>
+                  <tr className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900">
+                    <th className="py-2 px-1 sm:px-2 rounded-l-xl">Día</th>
+                    <th className="py-2 px-1 sm:px-2">Ingresos</th>
+                    <th className="py-2 px-1 sm:px-2">Gastos</th>
+                    <th className="py-2 px-1 sm:px-2 rounded-r-xl">Ganancia</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mes.filas.map((fila, i) => (
-                    <tr key={i} className={fila.fecha === 'TOTAL' ? 'bg-blue-200 font-bold text-blue-900' : ''}>
-                      <td className="p-2 md:p-3 border-b border-blue-100">{fila.fecha}</td>
-                      <td className="p-2 md:p-3 border-b border-blue-100">{formatearNumero(fila.ingresos)}</td>
-                      <td className="p-2 md:p-3 border-b border-blue-100">{formatearNumero(fila.gastos)}</td>
-                      <td className="p-2 md:p-3 border-b border-blue-100">{formatearNumero(fila.ganancia)}</td>
+                    <tr
+                      key={i}
+                      className={
+                        fila.fecha === 'TOTAL'
+                          ? 'bg-gradient-to-r from-blue-200 to-blue-300 font-bold text-blue-900'
+                          : 'hover:bg-blue-50 transition-colors'
+                      }
+                    >
+                      <td className="py-2 px-1 sm:px-2 font-mono text-blue-900">{fila.fecha}</td>
+                      <td className="py-2 px-1 sm:px-2 text-green-700 font-semibold">{formatearNumero(fila.ingresos)}</td>
+                      <td className="py-2 px-1 sm:px-2 text-red-600 font-semibold">{formatearNumero(fila.gastos)}</td>
+                      <td className="py-2 px-1 sm:px-2 text-blue-800 font-bold">{formatearNumero(fila.ganancia)}</td>
                     </tr>
                   ))}
                 </tbody>
